@@ -602,7 +602,7 @@ public class Turret extends ReloadTurret{
 
         @Override
         public boolean canConsume(){
-            if(heatRequirement > 0 && heatReq <= 0f){
+            if(heatRequirement > 0 && heatReq <= 0f && !isPayload()){
                 return false;
             }
             return super.canConsume();

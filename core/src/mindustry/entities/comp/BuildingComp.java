@@ -103,6 +103,10 @@ abstract class BuildingComp implements Posc, Teamc, Healthc, Buildingc, Timerc, 
     private transient float sleepTime;
     private transient boolean initialized;
 
+    public float mdScaledHealth() {
+        return health / maxHealth * ((Building) self()).block.health;
+    }
+
     /** Sets this tile entity data to this and adds it if necessary. */
     public Building init(Tile tile, Team team, boolean shouldAdd, int rotation){
         if(!initialized){
@@ -2150,6 +2154,23 @@ abstract class BuildingComp implements Posc, Teamc, Healthc, Buildingc, Timerc, 
             case team -> {
                 if(value instanceof Team team && this.team != team){
                     changeTeam(team);
+                }
+            }
+            case payloadType -> {
+                if (net.client()) return;
+
+                if (value instanceof Block b) {
+                    if (b.synthetic()) {
+                        Building build = b.newBuilding().create(b, team());
+                        BuildPayload payload = new BuildPayload(build);
+                        if (acceptPayload(null, payload)) handlePayload(null, payload);
+                    }
+                } else if (value instanceof UnitType ut) {
+                    Unit unit = ut.create(team());
+                    UnitPayload payload = new UnitPayload(unit);
+                    if (acceptPayload(null, payload)) handlePayload(null, payload);
+                } else if (value == null && getPayload() != null) {
+                    takePayload();
                 }
             }
         }

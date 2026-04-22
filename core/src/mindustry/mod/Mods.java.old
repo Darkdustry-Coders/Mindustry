@@ -14,7 +14,6 @@ import arc.util.*;
 import arc.util.io.*;
 import arc.util.serialization.*;
 import arc.util.serialization.Jval.*;
-import mindustry.NiMetadata;
 import mindustry.core.*;
 import mindustry.ctype.*;
 import mindustry.game.EventType.*;
@@ -26,15 +25,15 @@ import mindustry.type.*;
 import mindustry.ui.*;
 
 import java.io.*;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
 
 import static mindustry.Vars.*;
 
-public class Mods implements Loadable {
+public class Mods implements Loadable{
     private static final String[] metaFiles = {"mod.json", "mod.hjson", "plugin.json", "plugin.hjson"};
-    private static final ObjectSet<String> blacklistedMods = ObjectSet.with("ui-lib", "braindustry");
+    //it would be nice to parse semver and have syntax like "<1.0.5" here, but mods clearly don't use semver and it's an inconsistent mess
+    private static final ObjectSet<String> blacklistedMods = ObjectSet.with("ui-lib", "braindustry", "schema", "scheme-size:1.0.5", "scheme-size:1.0.4", "scheme-size:1.0.3", "scheme-size:1.0.1", "scheme-size:1.0.0", "scheme-size:1.1.0", "scheme-size:1.0.4.1");
 
     private Json json = new Json();
     private @Nullable Scripts scripts;
@@ -162,6 +161,8 @@ public class Mods implements Loadable {
 
             packSprites(packer, sprites, mod, true, tasks, textureResize);
             packSprites(packer, overrides, mod, false, tasks, textureResize);
+
+            if(mod.main != null) mod.main.packSprites(packer);
 
             Log.debug("Packed @ images for mod '@'.", sprites.size + overrides.size, mod.meta.name);
             totalSprites[0] += sprites.size + overrides.size;
@@ -373,6 +374,8 @@ public class Mods implements Loadable {
             baseName = file.nameWithoutExtension(),
             regionName = baseName.contains(".") ? baseName.substring(0, baseName.indexOf(".")) : baseName;
 
+            if(baseName.isEmpty()) continue; //fixes #11855 in case anyone tries to do it again
+
             if(!prefix && !Core.atlas.has(regionName)){
                 Log.warn("Sprite '@' in mod '@' attempts to override a non-existent sprite.", regionName, mod.name);
             }
@@ -491,150 +494,8 @@ public class Mods implements Loadable {
         return failedToLaunch && Core.settings.getBool("modcrashdisable", true);
     }
 
-    /** Loads a mod file+meta, but does not add it to the list.
-     * Note that directories can be loaded as mods. */
-    private LoadedMod loadModNative(Fi fi, ClassLoader loader) throws Exception {
-        ModMeta meta = findMetaNative(loader);
-
-        if(meta == null){
-            throw new ModLoadException("Invalid file: No mod.json found.");
-        }
-
-        String camelized = meta.name.replace(" ", "");
-        String mainClass = meta.main == null ? camelized.toLowerCase(Locale.ROOT) + "." + camelized + "Mod" : meta.main;
-        String baseName = meta.name.toLowerCase(Locale.ROOT).replace(" ", "-");
-
-        var other = mods.find(m -> m.name.equals(baseName));
-
-        if(other != null){
-            throw new ModLoadException("A mod with the name '" + baseName + "' is already imported.");
-        }
-
-        if (skipModLoading()) return null;
-
-        var main = Class.forName(mainClass, true, loader);
-        metas.put(main, meta);
-        Mod mainMod = (Mod)main.getDeclaredConstructor().newInstance();
-
-        //all plugins are hidden implicitly
-        if(mainMod instanceof Plugin){
-            meta.hidden = true;
-        }
-
-        //disallow putting a description after the version
-        if(meta.version != null){
-            int line = meta.version.indexOf('\n');
-            if(line != -1){
-                meta.version = meta.version.substring(0, line);
-            }
-        }
-
-        //skip mod loading if it failed
-        if(skipModLoading()){
-            Core.settings.put("mod-" + baseName + "-enabled", false);
-        }
-
-        if(!headless && Core.settings.getBool("mod-" + baseName + "-enabled", true)){
-            Log.info("Loading mod: @", meta.name);
-        }
-
-        return new LoadedMod(fi, fi, mainMod, loader, meta);
-    }
-
-    /** Tries to find the config file of a mod/plugin. */
-    private @Nullable ModMeta findMetaNative(ClassLoader loader){
-        InputStream metaFile = null;
-        for(String name : metaFiles){
-            metaFile = loader.getResourceAsStream(name);
-            if(metaFile != null){
-                break;
-            }
-        }
-
-        if(metaFile == null){
-            return null;
-        }
-
-        try {
-            ModMeta meta = json.fromJson(ModMeta.class, Jval.read(Streams.copyString(metaFile)).toString(Jformat.plain));
-            meta.cleanup();
-            return meta;
-        } catch (IOException ignored) {
-            return null;
-        }
-    }
-
-    /** Use native loader to load mods. */
-    private void loadNative() {
-        try {
-            String modPrefixes = Streams.copyString(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream("META-INF/mods")));
-
-            var metas = new Seq<ModMeta>();
-            var mapping = new ObjectMap<String, ClassLoader>();
-            var mappingFi = new ObjectMap<String, Fi>();
-
-            for (String prefix : modPrefixes.split("\r?\n")) {
-                prefix = prefix.trim();
-                if (prefix.isEmpty()) continue;
-
-                final var s = prefix + "/";
-                var loader = new ClassLoader(getClass().getClassLoader()) {
-                    @Override
-                    public URL getResource(String name) {
-                        return getParent().getResource(s + name);
-                    }
-
-                    @Override
-                    public Enumeration<URL> getResources(String name) throws IOException {
-                        return getParent().getResources(s + name);
-                    }
-
-                    @Override
-                    public InputStream getResourceAsStream(String name) {
-                        Log.info("Trying do get resource " + s + name);
-                        return getParent().getResourceAsStream(s + name);
-                    }
-                };
-                var meta = findMetaNative(loader);
-                if (meta == null) throw new RuntimeException("Failed to load metadata for mod " + prefix);
-
-                metas.add(meta);
-                mapping.put(meta.internalName, loader);
-                mappingFi.put(meta.internalName, new IncludedFi(loader.getParent(), prefix));
-            }
-
-            var resolved = resolveDependencies(metas);
-
-            for (var entry : resolved) {
-                var loader = mapping.get(entry.key);
-                var fi = mappingFi.get(entry.key);
-
-                Log.debug("[Mods] Loading mod @", entry.key);
-
-                try {
-                    var mod = loadModNative(fi, loader);
-                    mod.state = entry.value;
-                    mods.add(mod);
-                    lastOrderedMods = null;
-
-                } catch (Exception e) {
-                    Log.err("An error has occured when loading mod " + entry.key, e);
-                }
-            }
-
-            sortMods();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /** Loads all mods from the folder, but does not call any methods on them.*/
     public void load(){
-        if (NiMetadata.isNative) {
-            loadNative();
-            return;
-        }
-
         var candidates = new Seq<Fi>();
 
         // Add local mods
@@ -1328,6 +1189,7 @@ public class Mods implements Loadable {
                 Core.settings.getBool("mod-" + baseName + "-enabled", true) &&
                 Version.isAtLeast(meta.minGameVersion) &&
                 (meta.getMinMajor() >= minJavaModGameVersion || headless || meta.legacyCompatible) &&
+                !meta.isBlacklisted() &&
                 !skipModCode &&
                 initialize
             ){
@@ -1465,7 +1327,7 @@ public class Mods implements Loadable {
 
         /** Some mods are known to cause issues with the game; this detects and returns whether a mod is manually blacklisted. */
         public boolean isBlacklisted(){
-            return blacklistedMods.contains(name);
+            return meta.isBlacklisted();
         }
 
         /** @return whether this mod is outdated, i.e. not compatible with v8. */
@@ -1575,6 +1437,11 @@ public class Mods implements Loadable {
         public String[] contentOrder;
         /** Mod from an older major version that is compatible with the latest one as well. */
         public boolean legacyCompatible;
+
+        /** Some mods are known to cause issues with the game; this detects and returns whether a mod is manually blacklisted. */
+        public boolean isBlacklisted(){
+            return blacklistedMods.contains(name) || blacklistedMods.contains(name + ":" + version);
+        }
 
         public String shortDescription(){
             return Strings.truncate(subtitle == null ? (description == null || description.length() > maxModSubtitleLength ? "" : description) : subtitle, maxModSubtitleLength, "...");

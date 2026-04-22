@@ -1,35 +1,31 @@
+import java.nio.file.Files
+import java.nio.file.Paths
+
 if(JavaVersion.current().ordinal() < JavaVersion.VERSION_17.ordinal()){
     throw new Exception("!!! YOU MUST USE JAVA 17 OR ABOVE TO COMPILE AND RUN MINDUSTRY !!! Read the README. Your version: ${System.properties["java.version"]}")
 }
 
-include 'desktop', 'core', 'server', 'ios', 'annotations', 'tools', 'tests'
+include 'core', 'server', 'annotations', 'tools', 'tests'
 
-def hasSdk = System.getenv("ANDROID_HOME") != null
-
-def localProperties = new Properties()
-if(new File(settingsDir, 'local.properties').exists()){
-    localProperties.load(new File(settingsDir, 'local.properties').newDataInputStream())
-	if(localProperties.containsKey("sdk.dir")) hasSdk = true
+def workspacePath = null
+if (System.env["MINDURKA_WORKSPACE"] == null) {
+    def path = Paths.get("${rootProject.projectDir}").parent.resolve("workspace.meta")
+    if (Files.exists(path)) {
+        workspacePath = path.parent
+    } else {
+        throw new IllegalStateException("could not find workspace. Make sure 'MINDURKA_WORKSPACE' environment variable is set.")
+    }
+} else {
+    workspacePath = Paths.get(System.env["MINDURKA_WORKSPACE"])
 }
-
-if(System.getenv("JITPACK") == "true") hasSdk = false
-
-if(hasSdk){
-    include 'android'
-}else{
-    println("No Android SDK found. Skipping Android module.")
-}
-
-if(hasProperty("localRhino") || localProperties.getOrDefault("localRhino", "false") == "true"){
-    includeBuild("../rhino")
-}
+gradle.ext.workspacePath = workspacePath
 
 if(!hasProperty("noLocalArc")){
-    if(new File(rootDir.parent, 'Arc').exists()){
+    if(new File(rootDir.parent, 'arc').exists()){
         println("Compiling with localArc")
-        includeBuild("../Arc")
+        includeBuild("../arc")
     }else{
-        println("Local Arc not found. Cloning https://github.com/Anuken/Arc to a directory next to Mindustry is highly recommended, as jitpack is unreliable.")
+        throw RuntimeException("Workspace configuration is incorrect!")
     }
 
     if(new File(rootDir.parent, 'Mindustry-Debug').exists()){

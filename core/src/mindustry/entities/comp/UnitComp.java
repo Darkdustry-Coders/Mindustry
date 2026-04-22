@@ -7,6 +7,7 @@ import arc.math.*;
 import arc.math.geom.*;
 import arc.scene.ui.layout.*;
 import arc.util.*;
+import mindustry.Vars;
 import mindustry.ai.types.*;
 import mindustry.annotations.Annotations.*;
 import mindustry.async.*;
@@ -25,6 +26,7 @@ import mindustry.type.*;
 import mindustry.ui.*;
 import mindustry.world.*;
 import mindustry.world.blocks.*;
+import mindustry.world.blocks.defense.turrets.Turret;
 import mindustry.world.blocks.environment.*;
 import mindustry.world.blocks.payloads.*;
 import mindustry.world.meta.*;
@@ -38,7 +40,8 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
     static final float warpDst = 8f;
 
     @Import boolean dead, disarmed;
-    @Import float x, y, rotation, maxHealth, drag, armor, hitSize, health, shield, ammo, dragMultiplier, armorOverride, speedMultiplier;
+    @Import float health;
+    @Import float x, y, rotation, maxHealth, drag, armor, hitSize, shield, ammo, dragMultiplier, armorOverride, speedMultiplier;
     @Import Team team;
     @Import int id;
     @Import @Nullable Tile mineTile;
@@ -49,6 +52,7 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
     private UnitController controller;
     Ability[] abilities = {};
     UnitType type = UnitTypes.alpha;
+    @Mask("false")
     boolean spawnedByCore;
     double flag;
 
@@ -70,6 +74,10 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
     transient float drownTime;
     transient float splashTimer;
     transient @Nullable Floor lastDrownFloor;
+
+    public float mdScaledHealth() {
+        return health / maxHealth * ((Unit) self()).type.health;
+    }
 
     public boolean checkTarget(boolean targetAir, boolean targetGround){
         return (isGrounded() && targetGround) || (isFlying() && targetAir);

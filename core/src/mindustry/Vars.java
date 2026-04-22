@@ -254,8 +254,8 @@ public class Vars implements Loadable{
     public static final String saveExtension = "msav";
     /** schematic file extension */
     public static final String schematicExtension = "msch";
-    /** path to the java executable */
-    public static String javaPath;
+    // /** path to the java executable */
+    // public static String javaPath;
 
     /** list of all locales that can be switched to */
     public static Locale[] locales;
@@ -305,6 +305,12 @@ public class Vars implements Loadable{
     }
 
     public static void init(){
+        // try {
+        //     Reflect.invoke(Class.forName("_gen.serializers.LoadParsers"), "loadAll");
+        // } catch (Throwable e) {
+        //     throw new RuntimeException("Failed to initialize serialization", e);
+        // }
+
         Groups.init();
 
         if(loadLocales){
@@ -362,11 +368,11 @@ public class Vars implements Loadable{
         fogControl = new FogControl();
         bases = new BaseRegistry();
         logicVars = new GlobalVars();
-        javaPath =
-            new Fi(OS.prop("java.home")).child("bin/java").exists() ? new Fi(OS.prop("java.home")).child("bin/java").absolutePath() :
-            Core.files.local("jre/bin/java").exists() ? Core.files.local("jre/bin/java").absolutePath() : // Unix
-            Core.files.local("jre/bin/java.exe").exists() ? Core.files.local("jre/bin/java.exe").absolutePath() : // Windows
-            "java";
+        // javaPath =
+        //     new Fi(OS.prop("java.home")).child("bin/java").exists() ? new Fi(OS.prop("java.home")).child("bin/java").absolutePath() :
+        //     Core.files.local("jre/bin/java").exists() ? Core.files.local("jre/bin/java").absolutePath() : // Unix
+        //     Core.files.local("jre/bin/java.exe").exists() ? Core.files.local("jre/bin/java.exe").absolutePath() : // Windows
+        //     "java";
 
         state = new GameState();
 

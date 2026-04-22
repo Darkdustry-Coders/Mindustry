@@ -292,6 +292,7 @@ public class Weapon implements Cloneable{
     }
 
     public void update(Unit unit, WeaponMount mount){
+        mount.owner = unit;
         boolean can = unit.canShoot();
         float lastReload = mount.reload;
         mount.reload = Math.max(mount.reload - Time.delta * unit.reloadMultiplier, 0);

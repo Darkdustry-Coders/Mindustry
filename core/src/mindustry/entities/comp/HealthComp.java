@@ -3,15 +3,20 @@ package mindustry.entities.comp;
 import arc.util.*;
 import mindustry.annotations.Annotations.*;
 import mindustry.gen.*;
+import mindustry.world.blocks.defense.turrets.Turret;
 
 @Component
 abstract class HealthComp implements Entityc, Posc{
     static final float hitDuration = 9f;
-
-    float health;
+    @Mask("mdScaledHealth()") float health;
     transient float hitTime;
     transient float maxHealth = 1f;
     transient boolean dead;
+
+    /** Health scaled to unit's true max health. */
+    public float mdScaledHealth() {
+        return health;
+    }
 
     boolean isValid(){
         return !dead && isAdded();

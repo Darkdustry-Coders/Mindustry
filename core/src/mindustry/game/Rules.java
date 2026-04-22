@@ -5,6 +5,7 @@ import arc.struct.*;
 import arc.util.*;
 import arc.util.serialization.*;
 import arc.util.serialization.Json.*;
+import arc.mindurka.Serializable;
 import mindustry.*;
 import mindustry.content.*;
 import mindustry.ctype.*;

@@ -318,6 +318,7 @@ public class EntityProcess extends BaseProcessor{
                 Seq<Svar> syncedFields = new Seq<>();
                 Seq<Svar> allFields = new Seq<>();
                 Seq<FieldSpec> allFieldSpecs = new Seq<>();
+                ObjectMap<String, String> overrideFields = new ObjectMap<>();
 
                 boolean isSync = components.contains(s -> s.name().contains("Sync"));
 
@@ -384,6 +385,10 @@ public class EntityProcess extends BaseProcessor{
 
                             //last
                             builder.addField(FieldSpec.builder(float.class, f.name() + EntityIO.lastSuf).addModifiers(Modifier.TRANSIENT, Modifier.PRIVATE).build());
+                        }
+
+                        if (f.has(Mask.class)) {
+                            overrideFields.put(f.name(), f.annotation(Mask.class).value());
                         }
                     }
 
@@ -505,13 +510,13 @@ public class EntityProcess extends BaseProcessor{
                         //SPECIAL CASE: I/O code
                         //note that serialization is generated even for non-serializing entities for manual usage
                         if((first.name().equals("read") || first.name().equals("write"))){
-                            io.write(mbuilder, first.name().equals("write"));
+                            io.write(mbuilder, first.name().equals("write"), overrideFields);
                             specialIO = true;
                         }
 
                         //SPECIAL CASE: sync I/O code
                         if((first.name().equals("readSync") || first.name().equals("writeSync"))){
-                            io.writeSync(mbuilder, first.name().equals("writeSync"), allFields);
+                            io.writeSync(mbuilder, first.name().equals("writeSync"), allFields, overrideFields);
                         }
 
                         //SPECIAL CASE: sync I/O code for writing to/from a manual buffer

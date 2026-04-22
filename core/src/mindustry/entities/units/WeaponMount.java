@@ -6,6 +6,8 @@ import mindustry.gen.*;
 import mindustry.type.*;
 
 public class WeaponMount{
+    /** the owner of this mount */
+    public Unit owner;
     /** weapon associated with this mount */
     public final Weapon weapon;
     /** reload in frames; 0 means ready to fire */

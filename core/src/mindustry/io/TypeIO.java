@@ -2,6 +2,7 @@ package mindustry.io;
 
 import arc.audio.*;
 import arc.graphics.*;
+import arc.math.Mathf;
 import arc.math.geom.*;
 import arc.struct.*;
 import arc.util.*;
@@ -274,12 +275,28 @@ public class TypeIO{
         return Payload.read(read);
     }
 
+    private static float xcapdist(float x, float y, float xorigin, float yorigin, float max) {
+        float dst = Math.min(Mathf.dst(x, y, xorigin, yorigin), max);
+        float angle = Mathf.atan2(x - xorigin, y - yorigin);
+        return Mathf.cos(angle) * dst + xorigin;
+    }
+    private static float ycapdist(float x, float y, float xorigin, float yorigin, float max) {
+        float dst = Math.min(Mathf.dst(x, y, xorigin, yorigin), max);
+        float angle = Mathf.atan2(x - xorigin, y - yorigin);
+        return Mathf.sin(angle) * dst + yorigin;
+    }
+
     public static void writeMounts(Writes writes, WeaponMount[] mounts){
         writes.b(mounts.length);
         for(WeaponMount m : mounts){
             writes.b((m.shoot ? 1 : 0) | (m.rotate ? 2 : 0));
-            writes.f(m.aimX);
-            writes.f(m.aimY);
+            if (m.owner != null) {
+                writes.f(xcapdist(m.aimX, m.aimY, m.owner.x, m.owner.y, m.shoot ? Math.max(m.owner.range() * 1.5f, 1) : 1));
+                writes.f(ycapdist(m.aimX, m.aimY, m.owner.x, m.owner.y, m.shoot ? Math.max(m.owner.range() * 1.5f, 1) : 1));
+            } else {
+                writes.f(m.aimX);
+                writes.f(m.aimY);
+            }
         }
     }
 

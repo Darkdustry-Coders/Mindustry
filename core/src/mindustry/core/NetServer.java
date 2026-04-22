@@ -25,6 +25,7 @@ import mindustry.net.Administration.*;
 import mindustry.net.Packets.*;
 import mindustry.world.*;
 import mindustry.world.meta.*;
+import mindurka.coreplugin.extern.Header;
 
 import java.io.*;
 import java.net.*;
@@ -559,6 +560,8 @@ public class NetServer implements ApplicationListener{
 
         player.remove();
         player.con.hasDisconnected = true;
+
+        Header.lib.onDisconnected(player);
     }
 
     //these functions are for debugging only, and will be removed!

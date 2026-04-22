@@ -77,7 +77,7 @@ public class EntityIO{
         }
     }
 
-    void write(MethodSpec.Builder method, boolean write) throws Exception{
+    void write(MethodSpec.Builder method, boolean write, ObjectMap<String, String> overrideFields) throws Exception{
         this.method = method;
         this.write = write;
 
@@ -89,6 +89,10 @@ public class EntityIO{
             st("write.s($L)", revisions.peek().version);
             //write uses most recent revision
             for(RevisionField field : revisions.peek().fields){
+                if (overrideFields.containsKey(field.name)) {
+                    io(field.type, "/*this."+field.name+"*/ "+overrideFields.get(field.name), false);
+                    continue;
+                }
                 io(field.type, "this." + field.name, false);
             }
         }else{
@@ -118,7 +122,7 @@ public class EntityIO{
         }
     }
 
-    void writeSync(MethodSpec.Builder method, boolean write, Seq<Svar> allFields) throws Exception{
+    void writeSync(MethodSpec.Builder method, boolean write, Seq<Svar> allFields, ObjectMap<String, String> overrideFields) throws Exception{
         this.method = method;
         this.write = write;
 
@@ -127,6 +131,11 @@ public class EntityIO{
             for(RevisionField field : revisions.peek().fields){
                 Svar var = allFields.find(s -> s.name().equals(field.name));
                 if(var == null || var.has(NoSync.class)) continue;
+
+                if(overrideFields.containsKey(field.name)) {
+                    io(field.type, "/*this."+field.name+"*/ "+overrideFields.get(field.name), true);
+                    continue;
+                }
 
                 io(field.type, "this." + field.name, true);
             }

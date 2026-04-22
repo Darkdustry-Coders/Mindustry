@@ -44,7 +44,10 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
     @SyncLocal boolean typing, shooting, boosting;
     @SyncLocal @Nullable Block selectedBlock;
     @SyncLocal int selectedRotation;
-    @SyncLocal float mouseX, mouseY;
+    // @Mask("this.shooting && unit != null ? xcapdist(this.mouseX, this.mouseY, this.x, this.y, unit.type.range * 2.5f) : Float.NaN") @SyncLocal float mouseX;
+    // @Mask("this.shooting && unit != null ? ycapdist(this.mouseX, this.mouseY, this.x, this.y, unit.type.range * 2.5f) : Float.NaN") @SyncLocal float mouseY;
+    @Mask("this.shooting && unit != null ? x : Float.NaN") @SyncLocal float mouseX;
+    @Mask("this.shooting && unit != null ? y : Float.NaN") @SyncLocal float mouseY;
     /** command the unit had before it was controlled. */
     @Nullable @NoSync UnitCommand lastCommand;
     boolean admin;

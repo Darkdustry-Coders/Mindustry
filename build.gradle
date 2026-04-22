@@ -1,15 +1,19 @@
+import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
+import java.nio.file.FileVisitResult
+import java.nio.file.Files
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.Paths
+import java.nio.file.attribute.BasicFileAttributes
 
 buildscript{
     ext{
-        arcHash = property("archash")
-
         localArc = new File(rootDir.parent, 'Arc').exists() && !project.hasProperty("noLocalArc")
 
         arcModule = { String name ->
             //skip to last submodule
             name = name.substring(name.lastIndexOf(':') + 1)
-            return "com.github.Anuken${localArc ? "" : ".Arc"}:$name:$arcHash"
+            return "com.github.Anuken:$name:1.0"
         }
     }
 
@@ -30,6 +34,8 @@ plugins{
     id "org.jetbrains.kotlin.jvm" version "2.3.20"
     id "org.jetbrains.kotlin.kapt" version "2.3.20"
 }
+
+def workspacePath = gradle.ext.workspacePath
 
 allprojects{
     apply plugin: 'maven-publish'
@@ -235,28 +241,28 @@ configure(subprojects - project(":annotations") - project(":tests")){
     }
 }
 
-project(":desktop"){
-    apply plugin: "java"
-
-    compileJava.options.fork = true
-
-    dependencies{
-        implementation project(":core")
-        implementation arcModule("extensions:profiling")
-        implementation arcModule("extensions:discord")
-        implementation arcModule("natives:natives-filedialogs")
-        implementation arcModule("extensions:filedialogs")
-        implementation arcModule("natives:natives-desktop")
-        implementation arcModule("natives:natives-freetype-desktop")
-
-        if(debugged()) implementation project(":debug")
-
-        implementation "com.github.Anuken:steamworks4j:$steamworksVersion"
-
-        implementation arcModule("backends:backend-sdl")
-        annotationProcessor 'com.github.Anuken:jabel:0.9.0'
-    }
-}
+// project(":desktop"){
+//     apply plugin: "java"
+//
+//     compileJava.options.fork = true
+//
+//     dependencies{
+//         implementation project(":core")
+//         implementation arcModule("extensions:profiling")
+//         implementation arcModule("extensions:discord")
+//         implementation arcModule("natives:natives-filedialogs")
+//         implementation arcModule("extensions:filedialogs")
+//         implementation arcModule("natives:natives-desktop")
+//         implementation arcModule("natives:natives-freetype-desktop")
+//
+//         if(debugged()) implementation project(":debug")
+//
+//         implementation "com.github.Anuken:steamworks4j:$steamworksVersion"
+//
+//         implementation arcModule("backends:backend-sdl")
+//         annotationProcessor 'com.github.Anuken:jabel:0.9.0'
+//     }
+// }
 
 project(":core"){
     apply plugin: "java-library"
@@ -272,36 +278,76 @@ project(":core"){
 
     compileJava.options.fork = true
 
-    task preGen{
-        outputs.upToDateWhen{ false }
+    task preGen {
+        def rpath = "$rootDir/core"
+        def nativeImage = project.getProperties()["nativeimage"] == "true"
+
+        outputs.upToDateWhen { false }
         generateLocales()
         writeVersion()
         writeProcessors()
         writePlugins()
-    }
 
-    task copyChangelog{
-        doLast{
-            def props = loadVersionProps()
-            def androidVersion = props['androidBuildCode'].toInteger() - 2
-            def loglines = file("../changelog").text.split("\n")
-            def notice = "[This is a truncated changelog, see Github for full notes]"
-            def maxLength = 460
+        def path = Paths.get("$rpath/build/generated/sources/buildtime")
+        if (Files.exists(path)) Files.walkFileTree(path, new SimpleFileVisitor<java.nio.file.Path>() {
+            @Override
+            FileVisitResult visitFile(java.nio.file.Path file, BasicFileAttributes attrs) {
+                Files.delete(file)
+                return FileVisitResult.CONTINUE
+            }
 
-            def androidLogList = [notice] + loglines.findAll{ line -> !line.endsWith("]") || line.endsWith("[Mobile]") || line.endsWith("[Android]")}
-            def result = ""
-            androidLogList.forEach{line ->
-                if(result.length() + line.length() + 1 < maxLength){
-                    result += line + "\n"
-                }
+            @Override
+            FileVisitResult postVisitDirectory(java.nio.file.Path file, IOException exc) {
+                Files.delete(file)
+                return FileVisitResult.CONTINUE
             }
-            def changelogs = file("../fastlane/metadata/android/en-US/changelogs/")
-            changelogs.mkdirs()
-            try{
-                new File(changelogs, androidVersion + ".txt").text = (result)
-            }catch(Exception ignored){
-            }
-        }
+        })
+
+        Files.createDirectories(path.resolve("java/main/mindurka/coreplugin/extern/"))
+        Files.createDirectories(path.resolve("java/main/mindustry"))
+
+        def str = new StringWriter()
+        def p = new PrintWriter(str)
+
+        p.println("package mindurka.coreplugin.extern;")
+
+        p.println("import mindustry.gen.Player;")
+        // if (!nativeImage) p.println("import mindustry.Vars;")
+        p.println("import mindustry.Vars;")
+
+        p.println("public class Header {")
+
+        p.println("    public static final Header lib;")
+        p.println("    static {")
+        // if (!nativeImage) {
+        p.println("        try {")
+        p.println("            lib = (Header) Vars.mods.getMod(\"coreplugin\").loader.loadClass(\"mindurka.coreplugin.extern.HeaderI\").getField(\"INSTANCE\").get(null);")
+        p.println("        } catch (Exception e) {")
+        p.println("            throw new RuntimeException(e);")
+        p.println("        }")
+        // }
+        p.println("    }")
+
+        p.println("    public void onDisconnected(Player player) { throw new IllegalStateException(\"Not implemented!\"); }")
+
+        p.println("}")
+
+        Files.write(path.resolve("java/main/mindurka/coreplugin/extern/Header.java"), str.toString().getBytes(StandardCharsets.UTF_8))
+
+        str = new StringWriter()
+        p = new PrintWriter(str)
+        p.println("package mindustry;")
+
+        // Yes, I have deliberatery made those into functions so it's not optimized by javac.
+        // Native images, however, should remove the `isNative`/`shortcircuit` calls.
+        // I love making jar builds slower so native image build works at all!
+        p.println("public class NiMetadata {")
+        p.println("    private NiMetadata() {}")
+        p.println("    public static final boolean isNative = $nativeImage;")
+        p.println("    public static boolean shortcircuit() { return $nativeImage; }")
+        p.println("}")
+
+        Files.write(path.resolve("java/main/mindustry/NiMetadata.java"), str.toString().getBytes(StandardCharsets.UTF_8))
     }
 
     task depsJar(type: Jar, dependsOn: [classes, ":server:dist"]){
@@ -365,10 +411,10 @@ project(":core"){
 
     afterEvaluate{
         task mergedJavadoc(type: Javadoc){
-            def blacklist = [project(":ios"), project(":desktop"), project(":server"), project(":annotations")]
-            if(findProject(":android") != null){
-                blacklist += project(":android")
-            }
+            def blacklist = [project(":server"), project(":annotations")]
+            // if(findProject(":android") != null){
+            //     blacklist += project(":android")
+            // }
 
             source rootProject.subprojects.collect{ project ->
                 if(!blacklist.contains(project) && project.hasProperty("sourceSets")){
@@ -394,6 +440,7 @@ project(":core"){
     //comp** classes are only used for code generation
     jar{
         exclude("mindustry/entities/comp/**")
+        exclude("mindurka/coreplugin/extern/HeaderI.class")
     }
 }
 
@@ -472,7 +519,14 @@ configure([":core", ":server"].collect{project(it)}){
     publishing{
         publications{
             maven(MavenPublication){
+                groupId 'anuken'
+
                 from components.java
+            }
+        }
+        repositories {
+            maven {
+                url = "file://$workspacePath/.cache/maven"
             }
         }
     }

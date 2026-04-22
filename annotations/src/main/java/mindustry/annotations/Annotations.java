@@ -47,6 +47,13 @@ public class Annotations{
     public @interface ReadOnly{
     }
 
+    /** Replace the serializer with a function call. */
+    @Target({ElementType.FIELD})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface Mask{
+        String value();
+    }
+
     /** Indicates multiple inheritance on a component type. */
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.SOURCE)
