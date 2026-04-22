@@ -9,6 +9,7 @@ import arc.struct.*;
 import arc.util.*;
 import arc.util.CommandHandler.*;
 import arc.util.io.*;
+import mindustry.*;
 import mindustry.annotations.Annotations.*;
 import mindustry.content.*;
 import mindustry.core.GameState.*;
@@ -136,7 +137,11 @@ public class NetServer implements ApplicationListener{
             Events.fire(new ConnectionEvent(con));
 
             if(admins.isIPBanned(connect.addressTCP) || admins.isSubnetBanned(connect.addressTCP)){
-                con.kick(KickReason.banned);
+                if(Vars.steam && SteamAdmin.isBanned(connect.addressTCP)){
+                    con.kick("You have been banned from Steam lobbies for disruptive and shameful behavior.");
+                }else{
+                    con.kick(KickReason.banned);
+                }
             }
         });
 
@@ -274,7 +279,7 @@ public class NetServer implements ApplicationListener{
             }
 
             Player player = Player.create();
-            player.admin = admins.isAdmin(uuid, packet.usid);
+            player.admin = admins.isAdmin(uuid, packet.usid) || (steam && SteamAdmin.isAdmin(con.address));
             player.con = con;
             player.con.usid = packet.usid;
             player.con.uuid = uuid;
