@@ -30,6 +30,8 @@ import mindustry.world.blocks.*;
 import mindustry.world.draw.*;
 import mindustry.world.meta.*;
 
+import java.util.Objects;
+
 import static mindustry.Vars.*;
 
 public class Turret extends ReloadTurret{
@@ -705,7 +707,7 @@ public class Turret extends ReloadTurret{
 
         @Override
         protected float ammoReloadMultiplier(){
-            return hasAmmo() ? peekAmmo().reloadMultiplier : 1f;
+            return peekAmmo() != null ? peekAmmo().reloadMultiplier : 1f;
         }
 
         protected void updateShooting(){

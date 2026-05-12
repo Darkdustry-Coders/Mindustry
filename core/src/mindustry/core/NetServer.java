@@ -131,6 +131,9 @@ public class NetServer implements ApplicationListener{
     /** Packet handlers for logic client data */
     private ObjectMap<String, Seq<Cons2<Player, Object>>> logicClientDataHandlers = new ObjectMap<>();
 
+    /** Mindurka extension! Current synchronization target. */
+    public static @Nullable Player mdSyncTarget;
+
     public NetServer(){
 
         net.handleServer(Connect.class, (con, connect) -> {
@@ -650,6 +653,8 @@ public class NetServer implements ApplicationListener{
 
     @Remote(targets = Loc.client, priority = PacketPriority.low, unreliable = true)
     public static void requestBlockSnapshot(Player player, int pos){
+        mdSyncTarget = player;
+
         Building build = world.build(pos);
         if(build != null && build.team == player.team()){
             netServer.syncStream.reset();
@@ -660,6 +665,8 @@ public class NetServer implements ApplicationListener{
             Call.blockSnapshot(player.con, (short)1, netServer.syncStream.toByteArray());
             netServer.syncStream.reset();
         }
+
+        mdSyncTarget = null;
     }
 
     //sent from the client to the server in batches with the same incrementing groupId
@@ -1127,9 +1134,12 @@ public class NetServer implements ApplicationListener{
                 connection.syncTime = Time.millis();
 
                 try{
+                    mdSyncTarget = player;
                     writeEntitySnapshot(player);
                 }catch(IOException e){
                     Log.err(e);
+                }finally {
+                    mdSyncTarget = null;
                 }
             });
 
@@ -1208,6 +1218,8 @@ public class NetServer implements ApplicationListener{
             }
         }catch(IOException e){
             Log.err(e);
+        }finally {
+            mdSyncTarget = null;
         }
     }
 

@@ -21,5 +21,14 @@ public class LegacyMechPad extends LegacyBlock{
             read.f();
             read.f();
         }
+
+        @Override
+        public void write(Writes write) {
+            super.write(write);
+
+            write.f(0f);
+            write.f(0f);
+            write.f(0f);
+        }
     }
 }

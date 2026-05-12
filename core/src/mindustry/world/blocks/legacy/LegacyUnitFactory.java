@@ -35,5 +35,13 @@ public class LegacyUnitFactory extends LegacyBlock{
                 read.i();
             }
         }
+
+        @Override
+        public void write(Writes write) {
+            super.write(write);
+
+            write.f(0f);
+            write.i(0);
+        }
     }
 }
