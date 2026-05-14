@@ -25,6 +25,9 @@ import mindustry.net.*;
 import mindustry.net.Packets.*;
 import mindustry.ui.*;
 import mindustry.world.*;
+import mindustry.world.blocks.ControlBlock;
+import mindustry.world.blocks.defense.turrets.Turret;
+import mindustry.world.blocks.distribution.Router;
 import mindustry.world.blocks.storage.*;
 import mindustry.world.blocks.storage.CoreBlock.*;
 
@@ -44,10 +47,10 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
     @SyncLocal boolean typing, shooting, boosting;
     @SyncLocal @Nullable Block selectedBlock;
     @SyncLocal int selectedRotation;
-    // @Mask("this.shooting && unit != null ? xcapdist(this.mouseX, this.mouseY, this.x, this.y, unit.type.range * 2.5f) : Float.NaN") @SyncLocal float mouseX;
-    // @Mask("this.shooting && unit != null ? ycapdist(this.mouseX, this.mouseY, this.x, this.y, unit.type.range * 2.5f) : Float.NaN") @SyncLocal float mouseY;
-    @Mask("this.shooting && unit != null ? x : Float.NaN") @SyncLocal float mouseX;
-    @Mask("this.shooting && unit != null ? y : Float.NaN") @SyncLocal float mouseY;
+    //@Mask("this.shooting && unit != null ? mdBuildRange() == -1 ? x : xcapdist(mouseX, mouseY, x, y, mdBuildRange()) : Float.NaN") @SyncLocal float mouseX;
+    @Mask("mdBuildRange() != -1 ? xcapdist(mouseX, mouseY, x, y, shooting ? mdBuildRange() : 0.1f) : shooting && unit != null ? x : Float.NaN") @SyncLocal float mouseX;
+    // @Mask("this.shooting && unit != null ? mdBuildRange() == -1 ? y : ycapdist(mouseX, mouseY, x, y, mdBuildRange()) : Float.NaN") @SyncLocal float mouseY;
+    @Mask("mdBuildRange() != -1 ? ycapdist(mouseX, mouseY, x, y, shooting ? mdBuildRange() : 0.1f) : shooting && unit != null ? y : Float.NaN") @SyncLocal float mouseY;
     /** command the unit had before it was controlled. */
     @Nullable @NoSync UnitCommand lastCommand;
     boolean admin;
@@ -74,6 +77,39 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
     transient @Nullable QuadTree<BuildPlan> previewPlanTree;
     transient @Nullable QueryEachable planEachable;
     transient boolean previewPlansDirty;
+
+    private static float xcapdist(float x, float y, float xorigin, float yorigin, float max) {
+        float dst = Math.min(Mathf.dst(x, y, xorigin, yorigin), max);
+        float angle = Mathf.atan2(x - xorigin, y - yorigin);
+        return Mathf.cos(angle) * dst + xorigin;
+    }
+    private static float ycapdist(float x, float y, float xorigin, float yorigin, float max) {
+        float dst = Math.min(Mathf.dst(x, y, xorigin, yorigin), max);
+        float angle = Mathf.atan2(x - xorigin, y - yorigin);
+        return Mathf.sin(angle) * dst + yorigin;
+    }
+
+    public float mdBuildRange() {
+        var build = mdControlledBuilding();
+        if (build == null) return -1;
+        if (build instanceof Turret.TurretBuild) {
+            return ((Turret.TurretBuild) build).range();
+        }
+        if (build instanceof Router.RouterBuild) {
+            return 0.0001f;
+        }
+        return -1;
+    }
+
+    public Building mdControlledBuilding() {
+        if (unit == null || unit.type != UnitTypes.block) return null;
+        var build = buildOn();
+        if (build instanceof ControlBlock block) {
+            if (block.unit() != unit) return null;
+            return build;
+        }
+        return null;
+    }
 
     public Seq<BuildPlan> getPreviewPlans(){
         long timeToCommit = 100; //ms needed after first plan is received to "commit" the plans.

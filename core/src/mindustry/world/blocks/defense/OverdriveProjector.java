@@ -7,7 +7,9 @@ import arc.math.*;
 import arc.math.geom.*;
 import arc.util.*;
 import arc.util.io.*;
+import mindurka.coreplugin.extern.Header;
 import mindustry.annotations.Annotations.*;
+import mindustry.game.Team;
 import mindustry.gen.*;
 import mindustry.graphics.*;
 import mindustry.logic.*;
@@ -15,6 +17,8 @@ import mindustry.ui.*;
 import mindustry.world.*;
 import mindustry.world.consumers.*;
 import mindustry.world.meta.*;
+
+import java.io.DataOutputStream;
 
 import static mindustry.Vars.*;
 
@@ -82,6 +86,11 @@ public class OverdriveProjector extends Block{
 
     public class OverdriveBuild extends Building implements Ranged{
         public float heat, charge = Mathf.random(reload), phaseHeat, smoothEfficiency, useProgress;
+
+        @Override
+        public void writeSync(Writes write) {
+            super.writeSync(write);
+        }
 
         @Override
         public float range(){
@@ -154,6 +163,11 @@ public class OverdriveProjector extends Block{
             Lines.endLine(true);
 
             Draw.reset();
+        }
+
+        @Override
+        public boolean canConsume() {
+            return super.canConsume();
         }
 
         @Override

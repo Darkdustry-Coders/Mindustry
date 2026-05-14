@@ -312,23 +312,22 @@ project(":core"){
         p.println("package mindurka.coreplugin.extern;")
 
         p.println("import mindustry.gen.Player;")
-        // if (!nativeImage) p.println("import mindustry.Vars;")
         p.println("import mindustry.Vars;")
+        p.println("import mindustry.world.blocks.defense.OverdriveProjector;")
 
         p.println("public class Header {")
 
         p.println("    public static final Header lib;")
         p.println("    static {")
-        // if (!nativeImage) {
         p.println("        try {")
         p.println("            lib = (Header) Vars.mods.getMod(\"coreplugin\").loader.loadClass(\"mindurka.coreplugin.extern.HeaderI\").getField(\"INSTANCE\").get(null);")
         p.println("        } catch (Exception e) {")
         p.println("            throw new RuntimeException(e);")
         p.println("        }")
-        // }
         p.println("    }")
 
         p.println("    public void onDisconnected(Player player) { throw new IllegalStateException(\"Not implemented!\"); }")
+        p.println("    public boolean hasMindurkaCompat(Player player) { throw new IllegalStateException(\"Not implemented!\"); }")
 
         p.println("}")
 

@@ -653,20 +653,25 @@ public class NetServer implements ApplicationListener{
 
     @Remote(targets = Loc.client, priority = PacketPriority.low, unreliable = true)
     public static void requestBlockSnapshot(Player player, int pos){
+        var prevTarget = mdSyncTarget;
         mdSyncTarget = player;
 
-        Building build = world.build(pos);
-        if(build != null && build.team == player.team()){
-            netServer.syncStream.reset();
-            netServer.dataStreamWrites.i(build.pos());
-            netServer.dataStreamWrites.s(build.block.id);
-            build.writeSync(netServer.dataStreamWrites);
+        try {
+            Building build = world.build(pos);
+            if(build != null && build.team == player.team()){
+                netServer.syncStream.reset();
+                netServer.dataStreamWrites.i(build.pos());
+                netServer.dataStreamWrites.s(build.block.id);
+                build.writeSync(netServer.dataStreamWrites);
 
-            Call.blockSnapshot(player.con, (short)1, netServer.syncStream.toByteArray());
-            netServer.syncStream.reset();
+                Call.blockSnapshot(player.con, (short)1, netServer.syncStream.toByteArray());
+                netServer.syncStream.reset();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            mdSyncTarget = prevTarget;
         }
-
-        mdSyncTarget = null;
     }
 
     //sent from the client to the server in batches with the same incrementing groupId
@@ -993,7 +998,13 @@ public class NetServer implements ApplicationListener{
 
                 if(syncStream.size() > maxSnapshotSize){
                     dataStream.close();
-                    Call.blockSnapshot(sent, syncStream.toByteArray());
+                    var packet = new BlockSnapshotCallPacket();
+                    packet.amount = sent;
+                    packet.data = syncStream.toByteArray();
+                    for (var player : Groups.player) {
+                        if (Header.lib.hasMindurkaCompat(player)) continue;
+                        player.con.send(packet, false);
+                    }
                     sent = 0;
                     syncStream.reset();
                 }
@@ -1002,7 +1013,60 @@ public class NetServer implements ApplicationListener{
 
         if(sent > 0){
             dataStream.close();
-            Call.blockSnapshot(sent, syncStream.toByteArray());
+            var packet = new BlockSnapshotCallPacket();
+            packet.amount = sent;
+            packet.data = syncStream.toByteArray();
+            for (var player : Groups.player) {
+                if (Header.lib.hasMindurkaCompat(player)) continue;
+                player.con.send(packet, false);
+            }
+        }
+
+        var target = Groups.player.find(Header.lib::hasMindurkaCompat);
+        if (target == null) return;
+
+        // Perfectly acceptable until syncing per-player is required.
+        var prevTarget = NetServer.mdSyncTarget;
+        NetServer.mdSyncTarget = target;
+        try {
+            syncStream.reset();
+
+            sent = 0;
+            for(var team : state.teams.present){
+                for(var build : indexer.getFlagged(team.team, BlockFlag.synced)){
+                    sent++;
+
+                    dataStream.writeInt(build.pos());
+                    dataStream.writeShort(build.block.id);
+                    build.writeSync(dataStreamWrites);
+
+                    if(syncStream.size() > maxSnapshotSize){
+                        dataStream.close();
+                        var packet = new BlockSnapshotCallPacket();
+                        packet.amount = sent;
+                        packet.data = syncStream.toByteArray();
+                        for (var player : Groups.player) {
+                            if (!Header.lib.hasMindurkaCompat(player)) continue;
+                            player.con.send(packet, false);
+                        }
+                        sent = 0;
+                        syncStream.reset();
+                    }
+                }
+            }
+
+            if(sent > 0){
+                dataStream.close();
+                var packet = new BlockSnapshotCallPacket();
+                packet.amount = sent;
+                packet.data = syncStream.toByteArray();
+                for (var player : Groups.player) {
+                    if (!Header.lib.hasMindurkaCompat(player)) continue;
+                    player.con.send(packet, false);
+                }
+            }
+        } finally {
+            NetServer.mdSyncTarget = prevTarget;
         }
     }
 

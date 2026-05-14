@@ -107,6 +107,10 @@ abstract class BuildingComp implements Posc, Teamc, Healthc, Buildingc, Timerc, 
         return health / maxHealth * ((Building) self()).block.health;
     }
 
+    public boolean mdNetEnabled() {
+        return true;
+    }
+
     /** Sets this tile entity data to this and adds it if necessary. */
     public Building init(Tile tile, Team team, boolean shouldAdd, int rotation){
         if(!initialized){
@@ -185,7 +189,7 @@ abstract class BuildingComp implements Posc, Teamc, Healthc, Buildingc, Timerc, 
         write.b(rotation | 0b10000000);
         write.b(team.id);
         write.b(writeVisibility ? 4 : 3); //version
-        write.b(enabled ? 1 : 0);
+        write.b(enabled && mdNetEnabled() ? 1 : 0);
         //write presence of items/power/liquids/cons, so removing/adding them does not corrupt future saves.
         write.b(moduleBitmask());
         if(items != null) items.write(write);

@@ -23,7 +23,8 @@ import static mindustry.Vars.*;
 public class NetworkIO{
 
     public static void writeWorld(Player player, OutputStream os){
-
+        Player mdPrevSyncTarget = NetServer.mdSyncTarget;
+        NetServer.mdSyncTarget = player;
         try(DataOutputStream stream = new DataOutputStream(os)){
             //write all researched content to rules if hosting
             if(state.isCampaign()){
@@ -58,6 +59,8 @@ public class NetworkIO{
             SaveIO.getSaveWriter().writeCustomChunks(stream, true);
         }catch(IOException e){
             throw new RuntimeException(e);
+        }finally{
+            NetServer.mdSyncTarget = mdPrevSyncTarget;
         }
     }
 
