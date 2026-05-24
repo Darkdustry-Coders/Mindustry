@@ -328,6 +328,7 @@ project(":core"){
 
         p.println("    public void onDisconnected(Player player) { throw new IllegalStateException(\"Not implemented!\"); }")
         p.println("    public boolean hasMindurkaCompat(Player player) { throw new IllegalStateException(\"Not implemented!\"); }")
+        p.println("    public boolean onMapLoad() { throw new IllegalStateException(\"Not implemented!\"); }")
 
         p.println("}")
 

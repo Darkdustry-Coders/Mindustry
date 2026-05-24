@@ -11,6 +11,7 @@ import arc.util.Timer.*;
 import arc.util.serialization.*;
 import arc.util.serialization.JsonValue.*;
 import arc.util.serialization.Jval.*;
+import mindurka.coreplugin.extern.Header;
 import mindustry.*;
 import mindustry.core.GameState.*;
 import mindustry.core.*;
@@ -1225,6 +1226,7 @@ public class ServerControl implements ApplicationListener{
         cancelPlayTask();
 
         Runnable reload = () -> {
+            if (!Header.lib.onMapLoad()) return;
             try{
                 WorldReloader reloader = new WorldReloader();
                 reloader.begin();
