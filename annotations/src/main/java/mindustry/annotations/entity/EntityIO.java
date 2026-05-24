@@ -13,6 +13,8 @@ import mindustry.annotations.util.TypeIOResolver.*;
 
 import javax.lang.model.element.*;
 
+import java.lang.annotation.*;
+
 import static mindustry.annotations.BaseProcessor.instanceOf;
 
 public class EntityIO{
@@ -56,7 +58,8 @@ public class EntityIO{
         Seq<FieldSpec> fields = typeFields.select(spec ->
             !spec.hasModifier(Modifier.TRANSIENT) &&
             !spec.hasModifier(Modifier.STATIC) &&
-            !spec.hasModifier(Modifier.FINAL)/* &&
+            !spec.hasModifier(Modifier.FINAL)
+        /* &&
             (spec.type.isPrimitive() || serializer.has(spec.type.toString()))*/);
 
         //sort to keep order
@@ -77,7 +80,7 @@ public class EntityIO{
         }
     }
 
-    void write(MethodSpec.Builder method, boolean write, ObjectMap<String, String> overrideFields) throws Exception{
+    void write(MethodSpec.Builder method, boolean write, Seq<Svar> allFields, ObjectMap<String, String> overrideFields) throws Exception{
         this.method = method;
         this.write = write;
 
@@ -89,6 +92,7 @@ public class EntityIO{
             st("write.s($L)", revisions.peek().version);
             //write uses most recent revision
             for(RevisionField field : revisions.peek().fields){
+                if(fieldHasAnno(field, allFields, NoSerialize.class)) continue;
                 if (overrideFields.containsKey(field.name)) {
                     io(field.type, "/*this."+field.name+"*/ "+overrideFields.get(field.name), false);
                     continue;
@@ -110,6 +114,7 @@ public class EntityIO{
 
                 //add code for reading revision
                 for(RevisionField field : rev.fields){
+                    if(fieldHasAnno(field, allFields, NoSerialize.class)) continue;
                     //if the field doesn't exist, the result will be an empty string, it won't get assigned
                     io(field.type, presentFields.contains(field.name) ? "this." + field.name + " = " : "", false);
                 }
@@ -122,6 +127,11 @@ public class EntityIO{
         }
     }
 
+    boolean fieldHasAnno(RevisionField field, Seq<Svar> allFields, Class<? extends Annotation> type){
+        Svar var = allFields.find(s -> s.name().equals(field.name));
+        return var != null && var.has(type);
+    }
+
     void writeSync(MethodSpec.Builder method, boolean write, Seq<Svar> allFields, ObjectMap<String, String> overrideFields) throws Exception{
         this.method = method;
         this.write = write;
@@ -129,8 +139,7 @@ public class EntityIO{
         if(write){
             //write uses most recent revision
             for(RevisionField field : revisions.peek().fields){
-                Svar var = allFields.find(s -> s.name().equals(field.name));
-                if(var == null || var.has(NoSync.class)) continue;
+                if(fieldHasAnno(field, allFields, NoSync.class)) continue;
 
                 if(overrideFields.containsKey(field.name)) {
                     io(field.type, "/*this."+field.name+"*/ "+overrideFields.get(field.name), true);
@@ -246,8 +255,8 @@ public class EntityIO{
             st("$L(write, $L)", network ? serializer.getNetWriter(type, null) : serializer.writers.get(type), field);
         }else if(serializer.mutatorReaders.containsKey(type) && !write && !field.replace(" = ", "").contains(" ") && !field.isEmpty()){
             st("$L$L(read, $L)", field, serializer.mutatorReaders.get(type), field.replace(" = ", ""));
-        }else if(serializer.readers.containsKey(type) && !write){
-            st("$L$L(read)", field, serializer.readers.get(type));
+        }else if((serializer.readers.containsKey(type) || (network && serializer.netReaders.containsKey(type))) && !write){
+            st("$L$L(read)", field, network ? serializer.getNetReader(type, null) : serializer.readers.get(type));
         }else if(type.endsWith("[]")){ //it's a 1D array
             String rawType = type.substring(0, type.length() - 2);
 
