@@ -32,6 +32,7 @@ import mindustry.world.blocks.storage.*;
 import mindustry.world.blocks.storage.CoreBlock.*;
 
 import static mindustry.Vars.*;
+import static mindustry.MdUtil.*;
 
 @EntityDef(value = {Playerc.class}, serialize = false)
 @Component(base = true)
@@ -47,9 +48,7 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
     @SyncLocal boolean typing, shooting, boosting;
     @SyncLocal @Nullable Block selectedBlock;
     @SyncLocal int selectedRotation;
-    //@Mask("this.shooting && unit != null ? mdBuildRange() == -1 ? x : xcapdist(mouseX, mouseY, x, y, mdBuildRange()) : Float.NaN") @SyncLocal float mouseX;
     @Mask("mdBuildRange() != -1 ? xcapdist(mouseX, mouseY, x, y, shooting ? mdBuildRange() : 0.1f) : shooting && unit != null ? x : Float.NaN") @SyncLocal float mouseX;
-    // @Mask("this.shooting && unit != null ? mdBuildRange() == -1 ? y : ycapdist(mouseX, mouseY, x, y, mdBuildRange()) : Float.NaN") @SyncLocal float mouseY;
     @Mask("mdBuildRange() != -1 ? ycapdist(mouseX, mouseY, x, y, shooting ? mdBuildRange() : 0.1f) : shooting && unit != null ? y : Float.NaN") @SyncLocal float mouseY;
     /** command the unit had before it was controlled. */
     @Nullable @NoSync UnitCommand lastCommand;
@@ -77,17 +76,6 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
     transient @Nullable QuadTree<BuildPlan> previewPlanTree;
     transient @Nullable QueryEachable planEachable;
     transient boolean previewPlansDirty;
-
-    private static float xcapdist(float x, float y, float xorigin, float yorigin, float max) {
-        float dst = Math.min(Mathf.dst(x, y, xorigin, yorigin), max);
-        float angle = Mathf.atan2(x - xorigin, y - yorigin);
-        return Mathf.cos(angle) * dst + xorigin;
-    }
-    private static float ycapdist(float x, float y, float xorigin, float yorigin, float max) {
-        float dst = Math.min(Mathf.dst(x, y, xorigin, yorigin), max);
-        float angle = Mathf.atan2(x - xorigin, y - yorigin);
-        return Mathf.sin(angle) * dst + yorigin;
-    }
 
     public float mdBuildRange() {
         var build = mdControlledBuilding();

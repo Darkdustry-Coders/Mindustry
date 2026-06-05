@@ -78,6 +78,19 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
         return health / maxHealth * ((Unit) self()).type.health;
     }
 
+    public boolean mdReplaceNaN() { return !isShooting(); }
+
+    public float mdRange() {
+        float range = 0;
+        int max = type.weapons.size;
+        for (int i = 0; i < max; i++) {
+            var weapon = type.weapons.get(i);
+            float v = weapon.range();
+            if (v > range) range = v;
+        }
+        return range;
+    }
+
     public boolean checkTarget(boolean targetAir, boolean targetGround){
         return (isGrounded() && targetGround) || (isFlying() && targetAir);
     }

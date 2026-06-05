@@ -6,6 +6,9 @@ import mindustry.annotations.Annotations.*;
 import mindustry.entities.units.*;
 import mindustry.gen.*;
 import mindustry.type.*;
+import mindustry.world.blocks.defense.turrets.Turret;
+import mindustry.world.blocks.distribution.Router;
+import static mindustry.MdUtil.*;
 
 @Component
 abstract class WeaponsComp implements Teamc, Posc, Rotc, Velc, Statusc{
@@ -16,8 +19,30 @@ abstract class WeaponsComp implements Teamc, Posc, Rotc, Velc, Statusc{
     /** weapon mount array, never null */
     @SyncLocal WeaponMount[] mounts = {};
     @ReadOnly transient boolean isRotate;
-    @NoSerialize float aimX, aimY;
+    @Mask("mdAimXMask()") @NoSerialize float aimX;
+    @Mask("mdAimYMask()") @NoSerialize float aimY;
     boolean isShooting;
+
+    public boolean mdReplaceNaN() { return false; }
+
+    // Anuke holy shit this why is this so unstable.
+    // Why the fuck spectator changes this behavior
+    public float mdAimXMask() {
+        if (mdReplaceNaN()) return Float.NaN;
+        float f = xcapdist(aimX, aimY, x, y, isShooting ? mdRange() : 2f);
+        // Log.info("x: " + (f - x));
+        return blackBox(f);
+    }
+    public float mdAimYMask() {
+        if (mdReplaceNaN()) return Float.NaN;
+        float f = ycapdist(aimX, aimY, x, y, isShooting ? mdRange() : 2f);
+        // Log.info("y: " + (f - y));
+        return blackBox(f);
+    }
+
+    public float mdRange() {
+        return 2f;
+    }
 
     void setWeaponRotation(float rotation){
         for(WeaponMount mount : mounts){
