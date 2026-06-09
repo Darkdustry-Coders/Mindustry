@@ -60,7 +60,8 @@ public class AvoidanceProcess implements AsyncProcess{
             //only do avoidance if it's relevant to the team
             if(team.team.isAI() && !team.team.rules().rtsAi){
                 for(var unit : team.units){
-                    if(unit.collisionLayer() == PhysicsProcess.layerGround){
+                    //if(unit.collisionLayer() == PhysicsProcess.layerGround){
+                    if(unit.mdCollisionLayer == PhysicsProcess.layerGround){
                         //scaling is oversized 2x because units need to avoid things that are at their origin tile
                         float scaling = 2f;
                         requests.add(Point2.pack(unit.tileX(), unit.tileY()), Float.floatToRawIntBits(unit.hitSize * unitCollisionRadiusScale / tilesize * scaling), unit.id);

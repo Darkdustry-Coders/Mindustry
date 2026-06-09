@@ -18,7 +18,7 @@ public class PhysicsProcess implements AsyncProcess{
     layerUnderwater = 3;
 
     private PhysicsWorld physics;
-    private Seq<PhysicRef> refs = new Seq<>(false);
+    private Seq<PhysicRef> refs = Seq.createUnsafe(new PhysicRef[0], 0, false);
     //currently only enabled for units
     private EntityGroup<Unit> group = Groups.unit;
 
@@ -38,7 +38,9 @@ public class PhysicsProcess implements AsyncProcess{
         });
 
         //find Units without bodies and assign them
-        for(Unit entity : group){
+        var array = group.mdUnsafeGetArray();
+        for(int i = 0; i < array.size; i++){
+            var entity = array.items[i];
             if(entity == null || entity.type == null || !entity.type.physics) continue;
 
             if(entity.physref == null){
@@ -59,7 +61,8 @@ public class PhysicsProcess implements AsyncProcess{
             //save last position
             PhysicRef ref = entity.physref;
 
-            ref.body.layer = entity.collisionLayer();
+            //ref.body.layer = entity.collisionLayer();
+            ref.body.layer = entity.mdCollisionLayer;
             ref.x = entity.x;
             ref.y = entity.y;
             ref.body.local = local || entity.isLocal();
@@ -85,7 +88,8 @@ public class PhysicsProcess implements AsyncProcess{
         if(physics == null) return;
 
         //move entities
-        for(PhysicRef ref : refs){
+        for(int i = 0; i < refs.size; i++){
+            var ref = refs.items[i];
             Physicsc entity = ref.entity;
 
             //move by delta

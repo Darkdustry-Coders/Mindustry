@@ -311,6 +311,7 @@ project(":core"){
 
         p.println("package mindurka.coreplugin.extern;")
 
+        p.println("import arc.util.Log;")
         p.println("import mindustry.gen.Player;")
         p.println("import mindustry.Vars;")
         p.println("import mindustry.world.blocks.defense.OverdriveProjector;")
@@ -319,16 +320,20 @@ project(":core"){
 
         p.println("    public static final Header lib;")
         p.println("    static {")
+        p.println("        Header newLib = null;")
         p.println("        try {")
-        p.println("            lib = (Header) Vars.mods.getMod(\"coreplugin\").loader.loadClass(\"mindurka.coreplugin.extern.HeaderI\").getField(\"INSTANCE\").get(null);")
+        p.println("            newLib = (Header) Vars.mods.getMod(\"coreplugin\").loader.loadClass(\"mindurka.coreplugin.extern.HeaderI\").getField(\"INSTANCE\").get(null);")
         p.println("        } catch (Exception e) {")
-        p.println("            throw new RuntimeException(e);")
+        p.println("            Log.warn(\"Failed to load CorePlugin!\", e);")
+        p.println("            Log.warn(\"Using dummy implementation.\");")
+        p.println("            newLib = new Header();")
         p.println("        }")
+        p.println("        lib = newLib;")
         p.println("    }")
 
-        p.println("    public void onDisconnected(Player player) { throw new IllegalStateException(\"Not implemented!\"); }")
-        p.println("    public boolean hasMindurkaCompat(Player player) { throw new IllegalStateException(\"Not implemented!\"); }")
-        p.println("    public boolean onMapLoad() { throw new IllegalStateException(\"Not implemented!\"); }")
+        p.println("    public void onDisconnected(Player player) {}")
+        p.println("    public boolean hasMindurkaCompat(Player player) { return false; }")
+        p.println("    public boolean onMapLoad() { return true; }")
 
         p.println("}")
 
