@@ -151,8 +151,7 @@ public class AIController implements UnitController{
 
         Tile tile = unit.tileOn();
         if(tile == null) return;
-        //Tile targetTile = pathfinder.getField(unit.team, costType, pathTarget).getNextTile(tile, avoidance && unit.collisionLayer() == PhysicsProcess.layerGround ? unit.id : 0);
-        Tile targetTile = pathfinder.getField(unit.team, costType, pathTarget).getNextTile(tile, avoidance && unit.mdCollisionLayer == PhysicsProcess.layerGround ? unit.id : 0);
+        Tile targetTile = pathfinder.getField(unit.team, costType, pathTarget).getNextTile(tile, avoidance && unit.collisionLayer() == PhysicsProcess.layerGround ? unit.id : 0);
 
         if((tile == targetTile && stopAtTargetTile) || !unit.canPass(targetTile.x, targetTile.y)) return;
 
@@ -324,8 +323,7 @@ public class AIController implements UnitController{
         float ang = unit.angleTo(target);
         float diff = Angles.angleDist(ang, unit.rotation());
 
-        // if(target instanceof Unit u && u.collisionLayer() == unit.collisionLayer()){
-        if(target instanceof Unit u && u.mdCollisionLayer == unit.mdCollisionLayer){
+        if(target instanceof Unit u && u.collisionLayer() == unit.collisionLayer()){
             float avoidDist = u.physicSize() + 30f;
             if(turningAway){
 

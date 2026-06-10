@@ -370,8 +370,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
                 if(unit.controller() instanceof CommandAI ai){
                     //only assign a group when this is not a queued command
                     if(ai.commandQueue.size == 0 && unitIds.length > 1){
-                        // int layer = unit.collisionLayer();
-                        int layer = unit.mdCollisionLayer;
+                        int layer = unit.collisionLayer();
 
                         if(layer == -1) layer = 0;
 

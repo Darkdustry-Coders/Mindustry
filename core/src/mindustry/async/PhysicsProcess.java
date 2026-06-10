@@ -61,8 +61,7 @@ public class PhysicsProcess implements AsyncProcess{
             //save last position
             PhysicRef ref = entity.physref;
 
-            //ref.body.layer = entity.collisionLayer();
-            ref.body.layer = entity.mdCollisionLayer;
+            ref.body.layer = entity.collisionLayer();
             ref.x = entity.x;
             ref.y = entity.y;
             ref.body.local = local || entity.isLocal();

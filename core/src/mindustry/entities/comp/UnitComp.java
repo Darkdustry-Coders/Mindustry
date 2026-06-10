@@ -141,7 +141,7 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
 
         boolean shouldBoost = boost || onSolid() || (isFlying() && !canLand());
         elevation = Mathf.approachDelta(elevation, type.canBoost ? Mathf.num(shouldBoost) : 0f, shouldBoost ? type.riseSpeed : type.descentSpeed);
-        mdRecalcCollisionLayer();
+        // mdRecalcCollisionLayer();
         if(event){
             Events.fire(Trigger.unitCommandBoost);
         }
@@ -495,20 +495,14 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
     }
 
     // Mindurka: Hyper dangerous potentially breaking change!
-    @NoSerialize @NoSync
-    public int mdCollisionLayer = PhysicsProcess.layerGround;
-    public void mdRecalcCollisionLayer() {
-        mdCollisionLayer = type.allowLegStep && type.legPhysicsLayer ? PhysicsProcess.layerLegs : isGrounded() ? PhysicsProcess.layerGround : PhysicsProcess.layerFlying;
-    }
-    /**
-     * @return the collision layer to use for unit physics. Returning anything outside of PhysicsProcess contents will crash the game.
-     *
-     * @implNote Mindurka specific: returns the value of {@link UnitComp#mdCollisionLayer}. Consider using that instead.
-     *           {@link UnitComp#mdRecalcCollisionLayer()} must be called after updating {@link UnitComp#elevation}.
-     */
+    // @NoSerialize @NoSync
+    // public int mdCollisionLayer = PhysicsProcess.layerGround;
+    // public void mdRecalcCollisionLayer() {
+    //     mdCollisionLayer = type.allowLegStep && type.legPhysicsLayer ? PhysicsProcess.layerLegs : isGrounded() ? PhysicsProcess.layerGround : PhysicsProcess.layerFlying;
+    // }
+    /** @return the collision layer to use for unit physics. Returning anything outside of PhysicsProcess contents will crash the game. */
     public int collisionLayer(){
-        // return type.allowLegStep && type.legPhysicsLayer ? PhysicsProcess.layerLegs : isGrounded() ? PhysicsProcess.layerGround : PhysicsProcess.layerFlying;
-        return mdCollisionLayer;
+        return type.allowLegStep && type.legPhysicsLayer ? PhysicsProcess.layerLegs : isGrounded() ? PhysicsProcess.layerGround : PhysicsProcess.layerFlying;
     }
 
     public void lookAt(float angle){
@@ -626,7 +620,7 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
             team.data().updateCount(type, -1);
         }
 
-        mdRecalcCollisionLayer();
+        // mdRecalcCollisionLayer();
     }
 
     @Override
@@ -831,7 +825,7 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
 
             //move down
             elevation -= type.fallSpeed * Time.delta;
-            mdRecalcCollisionLayer();
+            // mdRecalcCollisionLayer();
 
             if(isGrounded() || health <= -maxHealth * type.wreckHealthMultiplier){
                 Call.unitDestroy(id);
@@ -859,7 +853,7 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
             //boost if possible
             if(type.canBoost){
                 elevation = 1f;
-                mdRecalcCollisionLayer();
+                // mdRecalcCollisionLayer();
             }else if(!net.client() && !(!headless && isRemote())){
                 kill();
             }
