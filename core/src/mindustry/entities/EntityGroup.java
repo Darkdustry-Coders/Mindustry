@@ -25,15 +25,6 @@ public class EntityGroup<T extends Entityc> implements Iterable<T>{
     private QuadTree tree;
     private boolean clearing;
 
-    /**
-     * Obtain the internal {@link Seq}.
-     * <p>
-     * Anuke does not want you to access this, so you probably shouldn't.
-     */
-    public Seq<T> mdUnsafeGetArray() {
-        return array;
-    }
-
     private int index;
 
     public static int nextId(){

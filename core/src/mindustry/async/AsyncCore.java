@@ -37,23 +37,11 @@ public class AsyncCore{
         });
     }
 
-    private void innerSyncBegin() {
-        // for(AsyncProcess p : processes){
-        //     p.begin();
-        // }
-    }
-    private void innerSubmit() {
-        //for(AsyncProcess p : processes){
-    }
     public void begin(){
         if(state.isPlaying()){
             //sync begin
-            // innerSyncBegin();
-            // for(AsyncProcess p : processes){
-            //     p.begin();
-            // }
-            for (int i = 0; i < processes.size; i++){
-                processes.items[i].begin();
+            for(AsyncProcess p : processes){
+                p.begin();
             }
 
             futures.clear();
@@ -69,18 +57,11 @@ public class AsyncCore{
             }
 
             //submit all tasks
-            // for(AsyncProcess p : processes){
-            //     if(p.shouldProcess()){
-            //         futures.add(executor.submit(p::process));
-            //     }
-            // }
-            for(int i = 0; i < processes.size; i++){
-                var p = processes.items[i];
+            for(AsyncProcess p : processes){
                 if(p.shouldProcess()){
                     futures.add(executor.submit(p::process));
                 }
             }
-            // innerSubmit();
         }
     }
 
