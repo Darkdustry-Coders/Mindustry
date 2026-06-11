@@ -1,6 +1,9 @@
 package mindustry;
 
+import arc.Events;
 import arc.math.Mathf;
+import arc.util.Time;
+import mindustry.game.EventType;
 
 public class MdUtil {
     private MdUtil() {}
@@ -17,4 +20,10 @@ public class MdUtil {
     }
 
     public static float blackBox(float x) { return x; }
+
+    public static long nowNanos = Long.MIN_VALUE;
+
+    public static void init() {
+        Events.run(EventType.Trigger.update, () -> nowNanos = Time.nanos());
+    }
 }

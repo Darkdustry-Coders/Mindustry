@@ -155,6 +155,9 @@ public class Reconstructor extends UnitBlock{
         public @Nullable Vec2 commandPos;
         public @Nullable UnitCommand command;
 
+        /** Time when a command could be set on this building. */
+        public long mdLastUnitConstruct = Long.MIN_VALUE;
+
         boolean constructing;
 
         public float fraction(){
@@ -310,6 +313,8 @@ public class Reconstructor extends UnitBlock{
             //cache value to prevent repeated calls and multithreading issues
             constructing = constructing();
             boolean valid = false;
+
+            if (canSetCommand()) mdLastUnitConstruct = MdUtil.nowNanos;
 
             if(payload != null){
                 //check if offloading

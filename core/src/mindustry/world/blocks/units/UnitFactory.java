@@ -215,6 +215,9 @@ public class UnitFactory extends UnitBlock{
         public @Nullable UnitCommand command;
         public int currentPlan = -1;
 
+        /** Time when a command could be set on this building. */
+        public long mdLastUnitConstruct = Long.MIN_VALUE;
+
         public float fraction(){
             return currentPlan == -1 ? 0 : progress / plans.get(currentPlan).time;
         }
@@ -399,6 +402,7 @@ public class UnitFactory extends UnitBlock{
             }
 
             moveOutPayload();
+            if (canSetCommand()) mdLastUnitConstruct = MdUtil.nowNanos;
 
             if(currentPlan != -1 && payload == null){
                 UnitPlan plan = plans.get(currentPlan);

@@ -6,6 +6,7 @@ import arc.math.*;
 import arc.math.geom.*;
 import arc.util.*;
 import arc.util.io.*;
+import mindustry.MdUtil;
 import mindustry.ctype.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
