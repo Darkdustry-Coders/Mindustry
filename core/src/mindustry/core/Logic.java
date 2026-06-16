@@ -3,6 +3,7 @@ package mindustry.core;
 import arc.*;
 import arc.math.*;
 import arc.util.*;
+import mindurka.coreplugin.extern.Header;
 import mindustry.*;
 import mindustry.ai.*;
 import mindustry.annotations.Annotations.*;
@@ -358,7 +359,8 @@ public class Logic implements ApplicationListener{
                 Events.fire(new GameOverEvent(state.rules.waveTeam));
             }else if(state.rules.attackMode){
                 //count # of teams alive
-                int countAlive = state.teams.getActive().count(t -> t.isAlive() && t.team != Team.derelict);
+                int countAlive = state.teams.getActive().count(t -> t.isAlive() && t.team != Team.derelict
+                    && Header.lib.countAlive(t.team));
 
                 if((countAlive <= 1 || (!state.rules.pvp && state.rules.defaultTeam.core() == null)) && !state.gameOver){
                     //find team that won

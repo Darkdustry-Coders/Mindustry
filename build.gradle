@@ -312,6 +312,7 @@ project(":core"){
         p.println("package mindurka.coreplugin.extern;")
 
         p.println("import mindustry.gen.Player;")
+        p.println("import mindustry.game.Team;")
         p.println("import mindustry.Vars;")
         p.println("import mindustry.world.blocks.defense.OverdriveProjector;")
 
@@ -329,6 +330,7 @@ project(":core"){
         p.println("    public void onDisconnected(Player player) { throw new IllegalStateException(\"Not implemented!\"); }")
         p.println("    public boolean hasMindurkaCompat(Player player) { throw new IllegalStateException(\"Not implemented!\"); }")
         p.println("    public boolean onMapLoad() { throw new IllegalStateException(\"Not implemented!\"); }")
+        p.println("    public boolean countAlive(Team team) { throw new IllegalStateException(\"Not implemented!\"); }")
 
         p.println("}")
 
